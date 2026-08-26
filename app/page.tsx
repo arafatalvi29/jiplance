@@ -1,7 +1,7 @@
 'use client'
 import { useEffect,useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { supabase } from "../lib/supabase";
 export default function Dashboard(){
  const router=useRouter(); const [products,setProducts]=useState<any[]>([]); const [role,setRole]=useState(''); const [msg,setMsg]=useState('');
  const [form,setForm]=useState({title:'',slug:'',price:'',stock:'0',age_group:'3–10',description:'',image_url:''})
