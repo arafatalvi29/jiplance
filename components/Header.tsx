@@ -150,6 +150,11 @@ export default function Header() {
 
   const trackingActive =
     pathname ===
+      "/my-orders" ||
+    pathname.startsWith(
+      "/my-orders/"
+    ) ||
+    pathname ===
       "/track-order" ||
     pathname.startsWith(
       "/track-order/"
@@ -383,7 +388,7 @@ export default function Header() {
             </button>
 
             <Link
-              href="/track-order"
+              href="/my-orders"
               className={`header-action desktop-action ${
                 trackingActive
                   ? "header-action-active"
@@ -397,13 +402,13 @@ export default function Header() {
               <span className="action-text">
                 <small>
                   {lang === "en"
-                    ? "Track"
-                    : "ট্র্যাক"}
+                    ? "My"
+                    : "আমার"}
                 </small>
 
                 <strong>
                   {lang === "en"
-                    ? "Order"
+                    ? "Orders"
                     : "অর্ডার"}
                 </strong>
               </span>
@@ -601,15 +606,15 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/track-order"
+                href="/my-orders"
                 onClick={
                   closeMenu
                 }
               >
                 <span>
                   {lang === "en"
-                    ? "Track Order"
-                    : "অর্ডার ট্র্যাক"}
+                    ? "My Orders"
+                    : "আমার অর্ডার"}
                 </span>
 
                 <span>

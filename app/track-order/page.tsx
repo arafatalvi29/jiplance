@@ -314,8 +314,10 @@ export default function TrackOrderPage() {
     };
 
   return (
-    <>
-      <Header />
+  <>
+    <TrackingStyles />
+
+    <Header />
 
       <main className="tracking-page">
         <section className="tracking-hero">
@@ -567,11 +569,9 @@ export default function TrackOrderPage() {
             }
           />
         )}
-      </main>
+           </main>
 
       <Footer />
-
-      <TrackingStyles />
     </>
   );
 }
@@ -1211,7 +1211,7 @@ function formatTime(
 
 function TrackingStyles() {
   return (
-    <style jsx global>{`
+    <style>{`
       .tracking-page {
         width: min(
           1180px,

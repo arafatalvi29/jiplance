@@ -736,16 +736,26 @@ export default async function AdminPage() {
               </a>
             )}
 
-            {hasCouponAccess && (
-              <a
-                href="/admin/coupons"
-                className="ghost-button"
-              >
-                Coupons
-              </a>
-            )}
+           {hasCouponAccess && (
+  <a
+    href="/admin/coupons"
+    className="ghost-button"
+  >
+    Coupons
+  </a>
+)}
 
-            {canViewNewsletter && (
+{(isOwner ||
+  profile.role === "admin") && (
+  <a
+    href="/admin/homepage"
+    className="ghost-button"
+  >
+    Homepage Images
+  </a>
+)}
+
+{canViewNewsletter && (
               <a
                 href="/admin/newsletter"
                 className="ghost-button"

@@ -271,6 +271,11 @@ export default function CheckoutPage() {
     useState("");
 
   const [
+    orderCodeUnavailable,
+    setOrderCodeUnavailable,
+  ] = useState(false);
+
+  const [
     createdOrderUuid,
     setCreatedOrderUuid,
   ] = useState("");
@@ -1810,10 +1815,16 @@ export default function CheckoutPage() {
             orderItems,
         }
       );
-if (error) {
-  console.error(
-    "Order creation error:",
-    error
+
+  if (error) {
+  console.log(
+    "Order creation failed:",
+    {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    }
   );
 
   setErrorMessage(
@@ -1891,40 +1902,110 @@ if (error) {
         );
       }
 
+      // ==============================================
+      // CUSTOMER-FACING ORDER CODE
+      //
+      // Never expose the internal UUID to customers.
+      // Guest orders are verified by order UUID + phone
+      // and returned as JIP-xxxx by the secure RPC.
+      // ==============================================
+
+      let finalOrderNumber = "";
+
       const {
         data:
-          displayOrderNumber,
+          guestDisplayOrderNumber,
         error:
-          displayNumberError,
+          guestDisplayNumberError,
       } = await supabase.rpc(
-        "get_order_display_number",
+        "get_guest_order_display_number",
         {
           p_order_id:
             actualOrderId,
+
+          p_phone:
+            phone.trim(),
         }
       );
 
       if (
-        displayNumberError
+        guestDisplayNumberError
       ) {
         console.error(
-          "Order number error:",
-          displayNumberError.message
+          "Guest order number error:",
+          guestDisplayNumberError.message
         );
       }
 
-      const finalOrderNumber =
-        displayOrderNumber ||
-        actualOrderId;
+      if (
+        typeof guestDisplayOrderNumber ===
+          "string" &&
+        /^JIP-\d+$/.test(
+          guestDisplayOrderNumber.trim()
+        )
+      ) {
+        finalOrderNumber =
+          guestDisplayOrderNumber.trim();
+      }
+
+      /*
+       * Logged-in customers may also be allowed to use
+       * the existing account-aware display-number RPC.
+       * This is only a fallback and never falls back to
+       * the internal UUID.
+       */
+      if (!finalOrderNumber) {
+        const {
+          data:
+            accountDisplayOrderNumber,
+          error:
+            accountDisplayNumberError,
+        } = await supabase.rpc(
+          "get_order_display_number",
+          {
+            p_order_id:
+              actualOrderId,
+          }
+        );
+
+        if (
+          accountDisplayNumberError
+        ) {
+          console.error(
+            "Account order number error:",
+            accountDisplayNumberError.message
+          );
+        }
+
+        if (
+          typeof accountDisplayOrderNumber ===
+            "string" &&
+          /^JIP-\d+$/.test(
+            accountDisplayOrderNumber.trim()
+          )
+        ) {
+          finalOrderNumber =
+            accountDisplayOrderNumber.trim();
+        }
+      }
 
       setOrderId(
         finalOrderNumber
       );
 
+      setOrderCodeUnavailable(
+        !finalOrderNumber
+      );
+
       if (
         typeof window !==
-        "undefined"
+          "undefined" &&
+        finalOrderNumber
       ) {
+        const cleanPhone =
+          phone.trim();
+
+        // Keep the existing session values for compatibility.
         sessionStorage.setItem(
           "jiplance-last-order-number",
           finalOrderNumber
@@ -1932,8 +2013,69 @@ if (error) {
 
         sessionStorage.setItem(
           "jiplance-last-order-phone",
-          phone.trim()
+          cleanPhone
         );
+
+        // Persist the latest guest order between browser sessions.
+        localStorage.setItem(
+          "jiplance-last-order-number",
+          finalOrderNumber
+        );
+
+        localStorage.setItem(
+          "jiplance-last-order-phone",
+          cleanPhone
+        );
+
+        try {
+          const recentKey =
+            "jiplance-recent-guest-orders";
+
+          const saved =
+            localStorage.getItem(
+              recentKey
+            );
+
+          const parsed = saved
+            ? JSON.parse(saved)
+            : [];
+
+          const recentOrders =
+            Array.isArray(parsed)
+              ? parsed
+              : [];
+
+          const nextRecentOrders = [
+            {
+              orderNumber:
+                finalOrderNumber,
+              phone:
+                cleanPhone,
+              createdAt:
+                new Date().toISOString(),
+            },
+            ...recentOrders.filter(
+              (entry) =>
+                entry &&
+                typeof entry ===
+                  "object" &&
+                entry.orderNumber !==
+                  finalOrderNumber
+            ),
+          ].slice(0, 5);
+
+          localStorage.setItem(
+            recentKey,
+            JSON.stringify(
+              nextRecentOrders
+            )
+          );
+        } catch (storageError) {
+          console.warn(
+            "Could not save recent guest order:",
+            storageError
+          );
+        }
       }
 
       setConfirmedSubtotal(
@@ -2036,16 +2178,65 @@ if (error) {
               )}
             </p>
 
+            {orderCodeUnavailable && (
+              <div className="order-code-warning">
+                <strong>
+                  {t(
+                    "Your order was created successfully.",
+                    "আপনার অর্ডার সফলভাবে তৈরি হয়েছে।"
+                  )}
+                </strong>
+
+                <p>
+                  {t(
+                    "The tracking code could not be loaded right now. Please contact JIPLANCE with the phone number used for this order. Your internal order ID is not shown for security and simplicity.",
+                    "এই মুহূর্তে ট্র্যাকিং কোড লোড করা যায়নি। অর্ডারে ব্যবহৃত ফোন নম্বর দিয়ে JIPLANCE-এর সঙ্গে যোগাযোগ করুন। নিরাপত্তা ও সহজ ব্যবহারের জন্য অভ্যন্তরীণ অর্ডার আইডি দেখানো হচ্ছে না।"
+                  )}
+                </p>
+              </div>
+            )}
+
             <div className="success-details">
               {orderId && (
-                <div>
+                <div className="order-code-card">
                   <span>
-            {t('Order ID', 'অর্ডার আইডি')}
-          </span>
+                    {t(
+                      "Order Code",
+                      "অর্ডার কোড"
+                    )}
+                  </span>
 
                   <strong>
                     {orderId}
                   </strong>
+
+                  <button
+                    type="button"
+                    className="order-code-copy-button"
+                    onClick={() =>
+                      copyText(
+                        orderId
+                      )
+                    }
+                  >
+                    {copiedValue ===
+                    orderId
+                      ? t(
+                          "✓ Copied",
+                          "✓ কপি হয়েছে"
+                        )
+                      : t(
+                          "Copy Code",
+                          "কোড কপি করুন"
+                        )}
+                  </button>
+
+                  <small className="order-code-note">
+                    {t(
+                      "Keep this code to track your order later.",
+                      "পরে অর্ডার ট্র্যাক করতে এই কোডটি সংরক্ষণ করুন।"
+                    )}
+                  </small>
                 </div>
               )}
 
@@ -2390,6 +2581,93 @@ if (error) {
             color: #252c49;
             overflow-wrap:
               anywhere;
+          }
+
+          .order-code-card {
+            position: relative;
+            border-color:
+              #dce4f5 !important;
+            background:
+              linear-gradient(
+                145deg,
+                #f7f9ff,
+                #ffffff
+              ) !important;
+          }
+
+          .order-code-card
+            strong {
+            display: block;
+            color: #182443;
+            font-size: 1.05rem;
+            letter-spacing:
+              0.02em;
+          }
+
+          .order-code-copy-button {
+            margin-top: 10px;
+            padding: 8px 11px;
+            border: 1px solid
+              #d8deec;
+            border-radius: 10px;
+            background: white;
+            color: #273354;
+            font-size: 0.72rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition:
+              transform
+                0.18s ease,
+              box-shadow
+                0.18s ease,
+              border-color
+                0.18s ease;
+          }
+
+          .order-code-copy-button:hover {
+            transform:
+              translateY(-1px);
+            border-color:
+              #aeb9d3;
+            box-shadow:
+              0 8px 18px
+              rgba(
+                31,
+                43,
+                78,
+                0.08
+              );
+          }
+
+          .order-code-note {
+            display: block;
+            margin-top: 9px;
+            color: #7d8496;
+            font-size: 0.66rem;
+            line-height: 1.5;
+          }
+
+          .order-code-warning {
+            margin: 22px 0 0;
+            padding: 16px 18px;
+            border: 1px solid
+              #f0dcae;
+            border-radius: 16px;
+            background: #fffaf0;
+            color: #74591f;
+          }
+
+          .order-code-warning
+            strong {
+            display: block;
+            margin-bottom: 5px;
+          }
+
+          .order-code-warning p {
+            margin: 0;
+            color: #816a37;
+            font-size: 0.78rem;
+            line-height: 1.65;
           }
 
           .success-coupon-card {

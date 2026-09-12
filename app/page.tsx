@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import NewsletterSignup from "@/components/NewsletterSignup";
 import BilingualText from "@/components/BilingualText";
-
+import HomeHeroImages from "@/components/HomeHeroImages";
 import {
   products,
 } from "@/lib/products";
@@ -235,17 +235,7 @@ export default async function Home() {
           </div>
 
           <div className="hero-art">
-            <div className="book book-one">
-              ABC
-            </div>
-
-            <div className="book book-two">
-              123
-            </div>
-
-            <div className="book book-three">
-              STORY
-            </div>
+            <HomeHeroImages />
 
             <span className="sparkle sparkle-a">
               ✦

@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import type { Product } from "@/lib/products";
 import WishlistButton from "@/components/WishlistButton";
@@ -16,7 +14,9 @@ export default function ProductCard({
   return (
     <article
       className={`product-card ${
-        featured ? "product-card-featured" : ""
+        featured
+          ? "product-card-featured"
+          : ""
       }`}
     >
       <div className="product-visual">
@@ -39,6 +39,19 @@ export default function ProductCard({
               src={product.imageUrl}
               alt={product.name}
               className="product-card-image"
+              loading={
+                featured
+                  ? "eager"
+                  : "lazy"
+              }
+              decoding="async"
+              fetchPriority={
+                featured
+                  ? "high"
+                  : "auto"
+              }
+              width={600}
+              height={760}
             />
           </Link>
         ) : (
@@ -56,6 +69,7 @@ export default function ProductCard({
       <div className="product-copy">
         <div className="eyebrow product-card-eyebrow">
           {product.category}
+
           {product.age &&
           product.age !== "All"
             ? ` • Age ${product.age}`
@@ -76,7 +90,10 @@ export default function ProductCard({
 
           {product.originalPrice && (
             <del>
-              ৳{product.originalPrice}
+              ৳
+              {
+                product.originalPrice
+              }
             </del>
           )}
         </div>
