@@ -3,7 +3,6 @@ import Footer from "@/components/Footer";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-
 type OrderItem = {
   id: string;
   product_name: string;
@@ -13,95 +12,72 @@ type OrderItem = {
   variant_size: string | null;
   variant_color: string | null;
 };
-
 type OrderRow = {
   id: string;
   order_number: number | null;
-
   customer_name: string;
   phone: string;
   address: string;
-
   delivery_area: string;
   delivery_charge: number;
-
   payment_method: string;
   transaction_id: string;
-
   subtotal: number;
   total: number;
-
   claimed_amount: number;
   due_amount: number;
-
   payment_proof_path: string | null;
   payment_proof_uploaded_at: string | null;
-
   status: string;
   payment_status: string;
-
   created_at: string;
-
   order_items: OrderItem[];
 };
-
 type OrderView =
   | "active"
   | "successful"
   | "cancelled"
   | "payments"
   | "all";
-
 async function updateOrderAction(
   formData: FormData
 ) {
   "use server";
-
   const supabase =
     await createSupabaseServerClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) {
     redirect("/account");
   }
-
   const orderId = String(
     formData.get("order_id") ?? ""
   );
-
   const paymentStatusValue =
     formData.get("payment_status");
-
   const orderStatusValue =
     formData.get("order_status");
-
   const paymentStatus =
     paymentStatusValue &&
     String(paymentStatusValue).trim() !== ""
       ? String(paymentStatusValue)
       : null;
-
   const orderStatus =
     orderStatusValue &&
     String(orderStatusValue).trim() !== ""
       ? String(orderStatusValue)
       : null;
-
   if (!orderId) {
     throw new Error(
       "Order ID is missing."
     );
   }
-
   if (!paymentStatus && !orderStatus) {
     throw new Error(
       "No update selected."
     );
   }
-
   /*
    * admin_update_order()
    * remains the final backend
@@ -115,20 +91,16 @@ async function updateOrderAction(
       p_order_status: orderStatus,
     }
   );
-
   if (error) {
     console.error(
       "Order update error:",
       error.message
     );
-
     throw new Error(error.message);
   }
-
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
 }
-
 export default async function AdminOrdersPage({
   searchParams,
 }: {
@@ -137,10 +109,8 @@ export default async function AdminOrdersPage({
   }>;
 }) {
   const params = await searchParams;
-
   const requestedView =
     params.view ?? "active";
-
   const currentView: OrderView = [
     "active",
     "successful",
@@ -150,18 +120,14 @@ export default async function AdminOrdersPage({
   ].includes(requestedView)
     ? (requestedView as OrderView)
     : "active";
-
   const supabase =
     await createSupabaseServerClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) {
     redirect("/account");
   }
-
   const {
     data: profile,
     error: profileError,
@@ -170,7 +136,6 @@ export default async function AdminOrdersPage({
     .select("role, is_active")
     .eq("id", user.id)
     .single();
-
   if (
     profileError ||
     !profile ||
@@ -181,7 +146,6 @@ export default async function AdminOrdersPage({
   ) {
     redirect("/account");
   }
-
   /*
    * PERMISSIONS
    */
@@ -196,51 +160,39 @@ export default async function AdminOrdersPage({
       required_permission:
         "orders.view",
     }),
-
     supabase.rpc("has_permission", {
       required_permission:
         "orders.update",
     }),
-
     supabase.rpc("has_permission", {
       required_permission:
         "orders.cancel",
     }),
-
     supabase.rpc("has_permission", {
       required_permission:
         "payments.view",
     }),
-
     supabase.rpc("has_permission", {
       required_permission:
         "payments.verify",
     }),
   ]);
-
   const canViewOrders =
     viewOrdersResult.data === true;
-
   const canUpdateOrders =
     updateOrdersResult.data === true;
-
   const canCancelOrders =
     cancelOrdersResult.data === true;
-
   const canViewPayments =
     viewPaymentsResult.data === true;
-
   const canVerifyPayments =
     verifyPaymentsResult.data === true;
-
   const canViewPaymentDetails =
     canViewPayments ||
     canVerifyPayments;
-
   if (!canViewOrders) {
     redirect("/admin");
   }
-
   /*
    * ORDER QUERY
    *
@@ -289,17 +241,14 @@ export default async function AdminOrdersPage({
     .order("created_at", {
       ascending: false,
     });
-
   if (ordersError) {
     console.error(
       "Admin orders error:",
       ordersError.message
     );
   }
-
   const orders =
     (ordersData ?? []) as OrderRow[];
-
   /*
    * PRIVATE PAYMENT PROOF URLs
    *
@@ -313,12 +262,10 @@ export default async function AdminOrdersPage({
     string,
     string
   > = {};
-
   const paymentProofErrors: Record<
     string,
     boolean
   > = {};
-
   if (canViewPaymentDetails) {
     const proofOrders =
       orders.filter(
@@ -327,7 +274,6 @@ export default async function AdminOrdersPage({
             order.payment_proof_path
           )
       );
-
     await Promise.all(
       proofOrders.map(
         async (order) => {
@@ -336,7 +282,6 @@ export default async function AdminOrdersPage({
           ) {
             return;
           }
-
           const {
             data: signedData,
             error: signedError,
@@ -349,7 +294,6 @@ export default async function AdminOrdersPage({
                 order.payment_proof_path,
                 60 * 10
               );
-
           if (
             signedError ||
             !signedData?.signedUrl
@@ -358,14 +302,11 @@ export default async function AdminOrdersPage({
               `Payment proof URL error for ${order.id}:`,
               signedError?.message
             );
-
             paymentProofErrors[
               order.id
             ] = true;
-
             return;
           }
-
           paymentProofUrls[
             order.id
           ] =
@@ -374,7 +315,6 @@ export default async function AdminOrdersPage({
       )
     );
   }
-
   const activeOrders =
     orders.filter(
       (order) =>
@@ -383,21 +323,18 @@ export default async function AdminOrdersPage({
           "cancelled",
         ].includes(order.status)
     );
-
   const successfulOrders =
     orders.filter(
       (order) =>
         order.status ===
         "delivered"
     );
-
   const cancelledOrders =
     orders.filter(
       (order) =>
         order.status ===
         "cancelled"
     );
-
   const paymentReviewOrders =
     orders.filter(
       (order) =>
@@ -405,13 +342,11 @@ export default async function AdminOrdersPage({
           "pending_verification" &&
         order.status !== "cancelled"
     );
-
   const effectiveView: OrderView =
     currentView === "payments" &&
     !canViewPaymentDetails
       ? "active"
       : currentView;
-
   const visibleOrders =
     effectiveView === "successful"
       ? successfulOrders
@@ -422,7 +357,6 @@ export default async function AdminOrdersPage({
       : effectiveView === "all"
       ? orders
       : activeOrders;
-
   const viewTitle =
     effectiveView === "successful"
       ? "Successful Orders"
@@ -433,7 +367,6 @@ export default async function AdminOrdersPage({
       : effectiveView === "all"
       ? "All Orders"
       : "New / Active Orders";
-
   const viewDescription =
     effectiveView === "successful"
       ? "Delivered orders are stored here as completed sales history."
@@ -444,27 +377,22 @@ export default async function AdminOrdersPage({
       : effectiveView === "all"
       ? "Complete order history."
       : "Only new and currently processing orders appear here.";
-
   const hasAnyOrderControl =
     canUpdateOrders ||
     canCancelOrders ||
     canVerifyPayments;
-
   return (
     <>
       <Header />
-
       <main className="section-shell page-space">
         <div className="shop-heading">
           <div>
             <div className="eyebrow">
               JIPLANCE ADMIN
             </div>
-
             <h1>
               Order Management
             </h1>
-
             <p>
               Signed in as{" "}
               <strong>
@@ -472,7 +400,6 @@ export default async function AdminOrdersPage({
               </strong>
             </p>
           </div>
-
           <a
             href="/admin"
             className="primary-button"
@@ -480,11 +407,9 @@ export default async function AdminOrdersPage({
             Back to Dashboard
           </a>
         </div>
-
         {/* =========================================
             SUMMARY
         ========================================= */}
-
         <section
           style={{
             display: "grid",
@@ -502,7 +427,6 @@ export default async function AdminOrdersPage({
               effectiveView === "active"
             }
           />
-
           {canViewPaymentDetails && (
             <SummaryCard
               href="/admin/orders?view=payments"
@@ -516,7 +440,6 @@ export default async function AdminOrdersPage({
               }
             />
           )}
-
           <SummaryCard
             href="/admin/orders?view=successful"
             label="Successful"
@@ -528,7 +451,6 @@ export default async function AdminOrdersPage({
               "successful"
             }
           />
-
           <SummaryCard
             href="/admin/orders?view=cancelled"
             label="Cancelled"
@@ -540,7 +462,6 @@ export default async function AdminOrdersPage({
               "cancelled"
             }
           />
-
           <SummaryCard
             href="/admin/orders?view=all"
             label="All Orders"
@@ -550,11 +471,9 @@ export default async function AdminOrdersPage({
             }
           />
         </section>
-
         {/* =========================================
             CURRENT VIEW
         ========================================= */}
-
         <section
           style={{
             marginBottom: "1.5rem",
@@ -567,7 +486,6 @@ export default async function AdminOrdersPage({
           <div className="eyebrow">
             CURRENT VIEW
           </div>
-
           <h2
             style={{
               marginTop: "6px",
@@ -576,11 +494,9 @@ export default async function AdminOrdersPage({
           >
             {viewTitle}
           </h2>
-
           <p style={{ margin: 0 }}>
             {viewDescription}
           </p>
-
           {!hasAnyOrderControl && (
             <p
               style={{
@@ -596,17 +512,14 @@ export default async function AdminOrdersPage({
             </p>
           )}
         </section>
-
         {/* =========================================
             ORDERS
         ========================================= */}
-
         {ordersError ? (
           <div className="empty-box">
             <strong>
               Could not load orders.
             </strong>
-
             <p>
               {ordersError.message}
             </p>
@@ -617,7 +530,6 @@ export default async function AdminOrdersPage({
             <h3>
               No orders here.
             </h3>
-
             <p>
               {effectiveView ===
               "active"
@@ -645,25 +557,20 @@ export default async function AdminOrdersPage({
                         0,
                         8
                       );
-
                 const isCancelled =
                   order.status ===
                   "cancelled";
-
                 const isSuccessful =
                   order.status ===
                   "delivered";
-
                 const proofUrl =
                   paymentProofUrls[
                     order.id
                   ];
-
                 const proofUrlError =
                   paymentProofErrors[
                     order.id
                   ] === true;
-
                 return (
                   <section
                     key={order.id}
@@ -675,7 +582,6 @@ export default async function AdminOrdersPage({
                     {/* =================================
                         ORDER TOP
                     ================================= */}
-
                     <div
                       style={{
                         display: "flex",
@@ -693,7 +599,6 @@ export default async function AdminOrdersPage({
                         <div className="eyebrow">
                           ORDER
                         </div>
-
                         <h2
                           style={{
                             marginBottom:
@@ -704,7 +609,6 @@ export default async function AdminOrdersPage({
                             displayOrderNumber
                           }
                         </h2>
-
                         <small>
                           {new Date(
                             order.created_at
@@ -717,25 +621,20 @@ export default async function AdminOrdersPage({
                           )}
                         </small>
                       </div>
-
                       <div>
                         <strong>
                           Order Status:{" "}
                         </strong>
-
                         {formatOrderStatus(
                           order.status
                         )}
-
                         {canViewPaymentDetails && (
                           <>
                             <br />
-
                             <strong>
                               Payment
                               Status:{" "}
                             </strong>
-
                             {formatPaymentStatus(
                               order.payment_status
                             )}
@@ -743,11 +642,9 @@ export default async function AdminOrdersPage({
                         )}
                       </div>
                     </div>
-
                     {/* =================================
                         CUSTOMER / PAYMENT / TOTAL
                     ================================= */}
-
                     <div
                       style={{
                         display: "grid",
@@ -762,7 +659,6 @@ export default async function AdminOrdersPage({
                         <h3>
                           Customer
                         </h3>
-
                         <p>
                           <strong>
                             {
@@ -770,15 +666,12 @@ export default async function AdminOrdersPage({
                             }
                           </strong>
                         </p>
-
                         <p>
                           {order.phone}
                         </p>
-
                         <p>
                           {order.address}
                         </p>
-
                         <p>
                           {order.delivery_area ===
                           "dhaka"
@@ -786,17 +679,14 @@ export default async function AdminOrdersPage({
                             : "Outside Dhaka"}
                         </p>
                       </div>
-
                       {/* =================================
                           PAYMENT
                       ================================= */}
-
                       {canViewPaymentDetails ? (
                         <div>
                           <h3>
                             Payment
                           </h3>
-
                           <p>
                             Method:{" "}
                             <strong>
@@ -805,20 +695,17 @@ export default async function AdminOrdersPage({
                               }
                             </strong>
                           </p>
-
                           <p>
                             {order.payment_method ===
                             "Bank"
                               ? "Transaction / Reference: "
                               : "Transaction ID: "}
-
                             <strong>
                               {
                                 order.transaction_id
                               }
                             </strong>
                           </p>
-
                           <p>
                             Amount Claimed
                             Sent:{" "}
@@ -829,7 +716,6 @@ export default async function AdminOrdersPage({
                               )}
                             </strong>
                           </p>
-
                           <p>
                             Due on
                             Delivery:{" "}
@@ -840,9 +726,7 @@ export default async function AdminOrdersPage({
                               )}
                             </strong>
                           </p>
-
                           {/* PAYMENT PROOF */}
-
                           <div
                             style={{
                               marginTop:
@@ -867,7 +751,6 @@ export default async function AdminOrdersPage({
                             >
                               Payment Proof
                             </strong>
-
                             {!order.payment_proof_path ? (
                               <p
                                 style={{
@@ -890,7 +773,6 @@ export default async function AdminOrdersPage({
                                   ✓ Screenshot
                                   received
                                 </p>
-
                                 {order.payment_proof_uploaded_at && (
                                   <small
                                     style={{
@@ -912,7 +794,6 @@ export default async function AdminOrdersPage({
                                     )}
                                   </small>
                                 )}
-
                                 <a
                                   href={
                                     proofUrl
@@ -930,7 +811,6 @@ export default async function AdminOrdersPage({
                                   View Payment
                                   Screenshot ↗
                                 </a>
-
                                 <small
                                   style={{
                                     display:
@@ -973,7 +853,6 @@ export default async function AdminOrdersPage({
                           <h3>
                             Payment
                           </h3>
-
                           <p>
                             Payment details
                             are restricted
@@ -982,26 +861,22 @@ export default async function AdminOrdersPage({
                           </p>
                         </div>
                       )}
-
                       <div>
                         <h3>
                           Order Total
                         </h3>
-
                         <p>
                           Subtotal: ৳
                           {Number(
                             order.subtotal
                           )}
                         </p>
-
                         <p>
                           Delivery: ৳
                           {Number(
                             order.delivery_charge
                           )}
                         </p>
-
                         <p>
                           <strong>
                             Total: ৳
@@ -1012,11 +887,9 @@ export default async function AdminOrdersPage({
                         </p>
                       </div>
                     </div>
-
                     {/* =================================
                         ORDER ITEMS
                     ================================= */}
-
                     <div
                       style={{
                         marginBottom:
@@ -1026,7 +899,6 @@ export default async function AdminOrdersPage({
                       <h3>
                         Items
                       </h3>
-
                       {order.order_items
                         ?.length > 0 ? (
                         <div
@@ -1051,7 +923,6 @@ export default async function AdminOrdersPage({
                                 >
                                   Product
                                 </th>
-
                                 <th
                                   style={
                                     cellStyle
@@ -1059,7 +930,6 @@ export default async function AdminOrdersPage({
                                 >
                                   Variant
                                 </th>
-
                                 <th
                                   style={
                                     cellStyle
@@ -1067,7 +937,6 @@ export default async function AdminOrdersPage({
                                 >
                                   Qty
                                 </th>
-
                                 <th
                                   style={
                                     cellStyle
@@ -1075,7 +944,6 @@ export default async function AdminOrdersPage({
                                 >
                                   Price
                                 </th>
-
                                 <th
                                   style={
                                     cellStyle
@@ -1085,7 +953,6 @@ export default async function AdminOrdersPage({
                                 </th>
                               </tr>
                             </thead>
-
                             <tbody>
                               {order.order_items.map(
                                 (
@@ -1096,7 +963,6 @@ export default async function AdminOrdersPage({
                                       item.variant_size
                                         ? `Size: ${item.variant_size}`
                                         : null,
-
                                       item.variant_color
                                         ? `Color: ${item.variant_color}`
                                         : null,
@@ -1107,7 +973,6 @@ export default async function AdminOrdersPage({
                                       .join(
                                         " • "
                                       );
-
                                   return (
                                     <tr
                                       key={
@@ -1123,7 +988,6 @@ export default async function AdminOrdersPage({
                                           item.product_name
                                         }
                                       </td>
-
                                       <td
                                         style={
                                           cellStyle
@@ -1132,7 +996,6 @@ export default async function AdminOrdersPage({
                                         {variantText ||
                                           "—"}
                                       </td>
-
                                       <td
                                         style={
                                           cellStyle
@@ -1142,7 +1005,6 @@ export default async function AdminOrdersPage({
                                           item.quantity
                                         }
                                       </td>
-
                                       <td
                                         style={
                                           cellStyle
@@ -1153,7 +1015,6 @@ export default async function AdminOrdersPage({
                                           item.unit_price
                                         )}
                                       </td>
-
                                       <td
                                         style={
                                           cellStyle
@@ -1178,11 +1039,9 @@ export default async function AdminOrdersPage({
                         </p>
                       )}
                     </div>
-
                     {/* =================================
                         CANCELLED
                     ================================= */}
-
                     {isCancelled && (
                       <div
                         style={{
@@ -1195,7 +1054,6 @@ export default async function AdminOrdersPage({
                         <strong>
                           Cancelled Order
                         </strong>
-
                         <p>
                           This order is
                           cancelled and
@@ -1205,11 +1063,9 @@ export default async function AdminOrdersPage({
                         </p>
                       </div>
                     )}
-
                     {/* =================================
                         SUCCESSFUL
                     ================================= */}
-
                     {isSuccessful && (
                       <div
                         style={{
@@ -1223,7 +1079,6 @@ export default async function AdminOrdersPage({
                           Successful Order
                           ✓
                         </strong>
-
                         <p>
                           This order has
                           been delivered
@@ -1233,11 +1088,9 @@ export default async function AdminOrdersPage({
                         </p>
                       </div>
                     )}
-
                     {/* =================================
                         ACTIVE CONTROLS
                     ================================= */}
-
                     {!isCancelled &&
                       !isSuccessful && (
                         <div
@@ -1254,7 +1107,6 @@ export default async function AdminOrdersPage({
                                 Payment
                                 Verification
                               </h3>
-
                               <p
                                 style={{
                                   marginTop:
@@ -1269,7 +1121,6 @@ export default async function AdminOrdersPage({
                                 payment screenshot
                                 before verifying.
                               </p>
-
                               <div
                                 style={{
                                   display:
@@ -1293,22 +1144,81 @@ export default async function AdminOrdersPage({
                                       order.id
                                     }
                                   />
-
                                   <input
                                     type="hidden"
                                     name="payment_status"
                                     value="verified"
                                   />
-
                                   <button
                                     type="submit"
                                     className="admin-action-button"
+                                    style={{
+                                      display:
+                                        "inline-flex",
+                                      alignItems:
+                                        "center",
+                                      gap: "8px",
+                                      fontWeight:
+                                        order.payment_status ===
+                                        "verified"
+                                          ? 800
+                                          : 600,
+                                      background:
+                                        order.payment_status ===
+                                        "verified"
+                                          ? "#18794e"
+                                          : undefined,
+                                      color:
+                                        order.payment_status ===
+                                        "verified"
+                                          ? "#ffffff"
+                                          : undefined,
+                                      border:
+                                        order.payment_status ===
+                                        "verified"
+                                          ? "2px solid #18794e"
+                                          : undefined,
+                                      boxShadow:
+                                        order.payment_status ===
+                                        "verified"
+                                          ? "0 8px 20px rgba(24, 121, 78, 0.22)"
+                                          : undefined,
+                                      transform:
+                                        order.payment_status ===
+                                        "verified"
+                                          ? "translateY(-2px) scale(1.03)"
+                                          : undefined,
+                                      transition:
+                                        "all 0.2s ease",
+                                    }}
                                   >
                                     ✓ Verify
                                     Payment
+                                    {order.payment_status ===
+                                      "verified" && (
+                                      <span
+                                        style={{
+                                          padding:
+                                            "3px 7px",
+                                          borderRadius:
+                                            "999px",
+                                          background:
+                                            "rgba(255,255,255,0.18)",
+                                          border:
+                                            "1px solid rgba(255,255,255,0.35)",
+                                          fontSize:
+                                            "9px",
+                                          fontWeight:
+                                            900,
+                                          letterSpacing:
+                                            "0.06em",
+                                        }}
+                                      >
+                                        CURRENT
+                                      </span>
+                                    )}
                                   </button>
                                 </form>
-
                                 <form
                                   action={
                                     updateOrderAction
@@ -1321,22 +1231,81 @@ export default async function AdminOrdersPage({
                                       order.id
                                     }
                                   />
-
                                   <input
                                     type="hidden"
                                     name="payment_status"
                                     value="rejected"
                                   />
-
                                   <button
                                     type="submit"
                                     className="admin-action-button"
+                                    style={{
+                                      display:
+                                        "inline-flex",
+                                      alignItems:
+                                        "center",
+                                      gap: "8px",
+                                      fontWeight:
+                                        order.payment_status ===
+                                        "rejected"
+                                          ? 800
+                                          : 600,
+                                      background:
+                                        order.payment_status ===
+                                        "rejected"
+                                          ? "#b42318"
+                                          : undefined,
+                                      color:
+                                        order.payment_status ===
+                                        "rejected"
+                                          ? "#ffffff"
+                                          : undefined,
+                                      border:
+                                        order.payment_status ===
+                                        "rejected"
+                                          ? "2px solid #b42318"
+                                          : undefined,
+                                      boxShadow:
+                                        order.payment_status ===
+                                        "rejected"
+                                          ? "0 8px 20px rgba(180, 35, 24, 0.22)"
+                                          : undefined,
+                                      transform:
+                                        order.payment_status ===
+                                        "rejected"
+                                          ? "translateY(-2px) scale(1.03)"
+                                          : undefined,
+                                      transition:
+                                        "all 0.2s ease",
+                                    }}
                                   >
                                     ✕ Reject
                                     Payment
+                                    {order.payment_status ===
+                                      "rejected" && (
+                                      <span
+                                        style={{
+                                          padding:
+                                            "3px 7px",
+                                          borderRadius:
+                                            "999px",
+                                          background:
+                                            "rgba(255,255,255,0.18)",
+                                          border:
+                                            "1px solid rgba(255,255,255,0.35)",
+                                          fontSize:
+                                            "9px",
+                                          fontWeight:
+                                            900,
+                                          letterSpacing:
+                                            "0.06em",
+                                        }}
+                                      >
+                                        CURRENT
+                                      </span>
+                                    )}
                                   </button>
                                 </form>
-
                                 <form
                                   action={
                                     updateOrderAction
@@ -1349,32 +1318,90 @@ export default async function AdminOrdersPage({
                                       order.id
                                     }
                                   />
-
                                   <input
                                     type="hidden"
                                     name="payment_status"
                                     value="pending_verification"
                                   />
-
                                   <button
                                     type="submit"
                                     className="admin-action-button"
+                                    style={{
+                                      display:
+                                        "inline-flex",
+                                      alignItems:
+                                        "center",
+                                      gap: "8px",
+                                      fontWeight:
+                                        order.payment_status ===
+                                        "pending_verification"
+                                          ? 800
+                                          : 600,
+                                      background:
+                                        order.payment_status ===
+                                        "pending_verification"
+                                          ? "#9a6700"
+                                          : undefined,
+                                      color:
+                                        order.payment_status ===
+                                        "pending_verification"
+                                          ? "#ffffff"
+                                          : undefined,
+                                      border:
+                                        order.payment_status ===
+                                        "pending_verification"
+                                          ? "2px solid #9a6700"
+                                          : undefined,
+                                      boxShadow:
+                                        order.payment_status ===
+                                        "pending_verification"
+                                          ? "0 8px 20px rgba(154, 103, 0, 0.22)"
+                                          : undefined,
+                                      transform:
+                                        order.payment_status ===
+                                        "pending_verification"
+                                          ? "translateY(-2px) scale(1.03)"
+                                          : undefined,
+                                      transition:
+                                        "all 0.2s ease",
+                                    }}
                                   >
                                     Pending
                                     Verification
+                                    {order.payment_status ===
+                                      "pending_verification" && (
+                                      <span
+                                        style={{
+                                          padding:
+                                            "3px 7px",
+                                          borderRadius:
+                                            "999px",
+                                          background:
+                                            "rgba(255,255,255,0.18)",
+                                          border:
+                                            "1px solid rgba(255,255,255,0.35)",
+                                          fontSize:
+                                            "9px",
+                                          fontWeight:
+                                            900,
+                                          letterSpacing:
+                                            "0.06em",
+                                        }}
+                                      >
+                                        CURRENT
+                                      </span>
+                                    )}
                                   </button>
                                 </form>
                               </div>
                             </>
                           )}
-
                           {(canUpdateOrders ||
                             canCancelOrders) && (
                             <>
                               <h3>
                                 Order Status
                               </h3>
-
                               <div
                                 style={{
                                   display:
@@ -1384,6 +1411,60 @@ export default async function AdminOrdersPage({
                                     "wrap",
                                 }}
                               >
+                                {order.status ===
+                                  "pending" && (
+                                  <div
+                                    style={{
+                                      display:
+                                        "inline-flex",
+                                      alignItems:
+                                        "center",
+                                      gap: "8px",
+                                      minHeight:
+                                        "42px",
+                                      padding:
+                                        "0 16px",
+                                      borderRadius:
+                                        "10px",
+                                      background:
+                                        "#1f2a44",
+                                      color:
+                                        "#ffffff",
+                                      border:
+                                        "2px solid #1f2a44",
+                                      fontWeight:
+                                        800,
+                                      boxShadow:
+                                        "0 8px 20px rgba(31, 42, 68, 0.22)",
+                                      transform:
+                                        "translateY(-2px) scale(1.03)",
+                                      transition:
+                                        "all 0.2s ease",
+                                    }}
+                                  >
+                                    Pending
+                                    <span
+                                      style={{
+                                        padding:
+                                          "3px 7px",
+                                        borderRadius:
+                                          "999px",
+                                        background:
+                                          "rgba(255,255,255,0.18)",
+                                        border:
+                                          "1px solid rgba(255,255,255,0.35)",
+                                        fontSize:
+                                          "9px",
+                                        fontWeight:
+                                          900,
+                                        letterSpacing:
+                                          "0.06em",
+                                      }}
+                                    >
+                                      CURRENT
+                                    </span>
+                                  </div>
+                                )}
                                 {canUpdateOrders && (
                                   <>
                                     <StatusButton
@@ -1392,34 +1473,42 @@ export default async function AdminOrdersPage({
                                       }
                                       status="confirmed"
                                       label="Confirm"
+                                      currentStatus={
+                                        order.status
+                                      }
                                     />
-
                                     <StatusButton
                                       orderId={
                                         order.id
                                       }
                                       status="processing"
                                       label="Processing"
+                                      currentStatus={
+                                        order.status
+                                      }
                                     />
-
                                     <StatusButton
                                       orderId={
                                         order.id
                                       }
                                       status="shipped"
                                       label="Shipped"
+                                      currentStatus={
+                                        order.status
+                                      }
                                     />
-
                                     <StatusButton
                                       orderId={
                                         order.id
                                       }
                                       status="delivered"
                                       label="Delivered"
+                                      currentStatus={
+                                        order.status
+                                      }
                                     />
                                   </>
                                 )}
-
                                 {canCancelOrders && (
                                   <StatusButton
                                     orderId={
@@ -1427,12 +1516,14 @@ export default async function AdminOrdersPage({
                                     }
                                     status="cancelled"
                                     label="Cancel Order"
+                                    currentStatus={
+                                      order.status
+                                    }
                                   />
                                 )}
                               </div>
                             </>
                           )}
-
                           {!hasAnyOrderControl && (
                             <p
                               style={{
@@ -1458,12 +1549,10 @@ export default async function AdminOrdersPage({
           </div>
         )}
       </main>
-
       <Footer />
     </>
   );
 }
-
 function SummaryCard({
   href,
   label,
@@ -1506,7 +1595,6 @@ function SummaryCard({
         <strong>
           {label}
         </strong>
-
         <h2
           style={{
             fontSize: "2rem",
@@ -1520,16 +1608,29 @@ function SummaryCard({
     </a>
   );
 }
-
 function StatusButton({
   orderId,
   status,
   label,
+  currentStatus,
 }: {
   orderId: string;
   status: string;
   label: string;
+  currentStatus: string;
 }) {
+  const isCurrent =
+    currentStatus === status;
+  const currentColor =
+    status === "delivered"
+      ? "#18794e"
+      : status === "cancelled"
+      ? "#b42318"
+      : status === "processing"
+      ? "#6941c6"
+      : status === "shipped"
+      ? "#175cd3"
+      : "#1f2a44";
   return (
     <form action={updateOrderAction}>
       <input
@@ -1537,23 +1638,67 @@ function StatusButton({
         name="order_id"
         value={orderId}
       />
-
       <input
         type="hidden"
         name="order_status"
         value={status}
       />
-
       <button
         type="submit"
         className="admin-action-button"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "8px",
+          fontWeight:
+            isCurrent ? 800 : 600,
+          background:
+            isCurrent
+              ? currentColor
+              : undefined,
+          color:
+            isCurrent
+              ? "#ffffff"
+              : undefined,
+          border:
+            isCurrent
+              ? `2px solid ${currentColor}`
+              : undefined,
+          boxShadow:
+            isCurrent
+              ? `0 8px 20px ${currentColor}38`
+              : undefined,
+          transform:
+            isCurrent
+              ? "translateY(-2px) scale(1.03)"
+              : undefined,
+          transition:
+            "all 0.2s ease",
+        }}
       >
         {label}
+        {isCurrent && (
+          <span
+            style={{
+              padding: "3px 7px",
+              borderRadius: "999px",
+              background:
+                "rgba(255,255,255,0.18)",
+              border:
+                "1px solid rgba(255,255,255,0.35)",
+              fontSize: "9px",
+              fontWeight: 900,
+              letterSpacing:
+                "0.06em",
+            }}
+          >
+            CURRENT
+          </span>
+        )}
       </button>
     </form>
   );
 }
-
 function formatPaymentStatus(
   status: string
 ) {
@@ -1563,48 +1708,37 @@ function formatPaymentStatus(
   ) {
     return "Pending Verification";
   }
-
   if (status === "verified") {
     return "Verified";
   }
-
   if (status === "rejected") {
     return "Rejected";
   }
-
   return status;
 }
-
 function formatOrderStatus(
   status: string
 ) {
   if (status === "pending") {
     return "Pending";
   }
-
   if (status === "confirmed") {
     return "Confirmed";
   }
-
   if (status === "processing") {
     return "Processing";
   }
-
   if (status === "shipped") {
     return "Shipped";
   }
-
   if (status === "delivered") {
     return "Delivered";
   }
-
   if (status === "cancelled") {
     return "Cancelled";
   }
-
   return status;
 }
-
 const cellStyle = {
   textAlign: "left" as const,
   padding: "12px",
