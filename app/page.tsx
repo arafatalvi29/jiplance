@@ -152,98 +152,113 @@ export default async function Home() {
       <main>
 
         {/* =================================================
-            HERO
+            VIDEO HERO — TEST BRANCH ONLY
         ================================================= */}
 
-        <section className="hero section-shell">
-          <div className="hero-copy">
-            <div className="eyebrow">
-              <BilingualText
-                en="BOOKS FOR CURIOUS YOUNG MINDS"
-                bn="কৌতূহলী ছোট্ট মনগুলোর জন্য বই"
-              />
+        <section className="video-hero">
+          <video
+            className="video-hero-media"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/jiplance-logo.png"
+            aria-hidden="true"
+          >
+            <source
+              src="/jiplance-hero.mp4"
+              type="video/mp4"
+            />
+          </video>
+
+          <div className="video-hero-overlay" />
+
+          <div className="video-hero-content section-shell">
+            <div className="video-hero-copy">
+              <div className="video-hero-eyebrow">
+                <BilingualText
+                  en="BOOKS FOR CURIOUS YOUNG MINDS"
+                  bn="কৌতূহলী ছোট্ট মনগুলোর জন্য বই"
+                />
+              </div>
+
+              <h1>
+                <BilingualText
+                  en="Small pages."
+                  bn="ছোট্ট পাতা।"
+                />
+                <br />
+                <BilingualText
+                  en="Big imagination."
+                  bn="বিশাল কল্পনার জগৎ।"
+                />
+              </h1>
+
+              <p>
+                <BilingualText
+                  en="Thoughtfully selected sensory, story and educational books for young readers."
+                  bn="শিশু পাঠকদের জন্য যত্নসহকারে বাছাই করা সেন্সরি, গল্প ও শিক্ষামূলক বই।"
+                />
+              </p>
+
+              <div className="video-hero-actions">
+                <Link
+                  className="video-primary-button"
+                  href="/shop"
+                >
+                  <BilingualText
+                    en="Shop Books"
+                    bn="বই কিনুন"
+                  />
+                </Link>
+
+                <Link
+                  className="video-secondary-button"
+                  href="/fashion"
+                >
+                  <BilingualText
+                    en="Shop Fashion"
+                    bn="ফ্যাশন দেখুন"
+                  />
+                </Link>
+              </div>
+
+              <div className="video-trust-row">
+                <span>
+                  ✓{" "}
+                  <BilingualText
+                    en="Bangladesh delivery"
+                    bn="সারা বাংলাদেশে ডেলিভারি"
+                  />
+                </span>
+
+                <span>
+                  ✓{" "}
+                  <BilingualText
+                    en="bKash & Bank Payment"
+                    bn="বিকাশ ও ব্যাংক পেমেন্ট"
+                  />
+                </span>
+
+                <span>
+                  ✓{" "}
+                  <BilingualText
+                    en="Parent-friendly shopping"
+                    bn="অভিভাবক-বান্ধব কেনাকাটা"
+                  />
+                </span>
+              </div>
             </div>
 
-            <h1>
-              <BilingualText
-                en="Small pages."
-                bn="ছোট্ট পাতা।"
-              />
-
-              <br />
-
-              <BilingualText
-                en="Big imagination."
-                bn="বিশাল কল্পনার জগৎ।"
-              />
-            </h1>
-
-            <p>
-              <BilingualText
-                en="Thoughtfully selected sensory, story and educational books for young readers."
-                bn="শিশু পাঠকদের জন্য যত্নসহকারে বাছাই করা সেন্সরি, গল্প ও শিক্ষামূলক বই।"
-              />
-            </p>
-
-            <div className="hero-actions">
-              <Link
-                className="primary-button"
-                href="/shop"
-              >
-                <BilingualText
-                  en="Shop Books"
-                  bn="বই কিনুন"
-                />
-              </Link>
-
-              <Link
-                className="secondary-button"
-                href="/fashion"
-              >
-                <BilingualText
-                  en="Shop Fashion"
-                  bn="ফ্যাশন দেখুন"
-                />
-              </Link>
-            </div>
-
-            <div className="trust-row">
-              <span>
-                ✓{" "}
-                <BilingualText
-                  en="Bangladesh delivery"
-                  bn="সারা বাংলাদেশে ডেলিভারি"
-                />
-              </span>
-
-              <span>
-                ✓{" "}
-                <BilingualText
-                  en="bKash & Bank Payment"
-                  bn="বিকাশ ও ব্যাংক পেমেন্ট"
-                />
-              </span>
-
-              <span>
-                ✓{" "}
-                <BilingualText
-                  en="Parent-friendly shopping"
-                  bn="অভিভাবক-বান্ধব কেনাকাটা"
-                />
-              </span>
-            </div>
-          </div>
-
-          <div className="hero-art">
-            <HomeHeroImages />
-
-            <span className="sparkle sparkle-a">
-              ✦
-            </span>
-
-            <span className="sparkle sparkle-b">
-              ✷
-            </span>
+            <a
+              className="video-scroll-indicator"
+              href="#home-categories"
+              aria-label="Scroll to categories"
+            >
+              <span>Scroll</span>
+              <span aria-hidden="true">↓</span>
+            </a>
           </div>
         </section>
 
@@ -251,7 +266,7 @@ export default async function Home() {
             CATEGORY STRIP
         ================================================= */}
 
-        <section className="section-shell category-strip">
+        <section id="home-categories" className="section-shell category-strip">
           <Link href="/shop?category=Sensory">
             <span>
               🖐️
