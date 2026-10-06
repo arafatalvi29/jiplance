@@ -156,21 +156,41 @@ export default async function Home() {
         ================================================= */}
 
         <section className="video-hero">
-          <video
-            className="video-hero-media"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster="/jiplance-logo.png"
-            aria-hidden="true"
-          >
-            <source
-              src="https://videos.pexels.com/video-files/4961707/4961707-uhd_3840_2160_25fps.mp4"
-              type="video/mp4"
-            />
-          </video>
+          <div className="jiplance-motion-scene" aria-hidden="true">
+            <div className="motion-orb motion-orb-one" />
+            <div className="motion-orb motion-orb-two" />
+            <div className="motion-orb motion-orb-three" />
+
+            <div className="motion-book motion-book-one">
+              <span>READ</span>
+            </div>
+
+            <div className="motion-book motion-book-two">
+              <span>LEARN</span>
+            </div>
+
+            <div className="motion-book motion-book-three">
+              <span>IMAGINE</span>
+            </div>
+
+            <div className="motion-shirt">
+              <span className="motion-shirt-body" />
+            </div>
+
+            <div className="motion-dress">
+              <span className="motion-dress-body" />
+            </div>
+
+            <div className="motion-brand-card">
+              <strong>JL</strong>
+              <span>JIPLANCE</span>
+              <small>BOOKS • FASHION</small>
+            </div>
+
+            <span className="motion-spark motion-spark-one">✦</span>
+            <span className="motion-spark motion-spark-two">✦</span>
+            <span className="motion-spark motion-spark-three">✦</span>
+          </div>
 
           <div className="video-hero-overlay" />
 
